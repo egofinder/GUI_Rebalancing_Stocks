@@ -98,7 +98,7 @@ class RebalancingApp(Frame):
             temp_series = pd.Series([invest_amount_per_stock/price], index=['Equal Rebalance'])
             temp_series = self.new_df.iloc[i].append(temp_series)
             self.equal_df = self.equal_df.append(temp_series, ignore_index=True)
-        self.equal_df = self.equal_df[['Symbol', 'Description', 'Quantity', 'Equal Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
+        self.equal_df = self.equal_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Equal Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
         self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False)
         self.pt.autoResizeColumns()
         self.pt.show()
@@ -124,7 +124,7 @@ class RebalancingApp(Frame):
             # Keep only first row if there is duplications
             # self.df.drop_duplicates(subset=['Symbol'], inplace=True)
             # self.df.set_index('Symbol', inplace=True)
-            self.df = self.df.head(5)
+            self.df = self.df.head()
             self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False)
             self.pt.autoResizeColumns()
             self.pt.show()
@@ -141,7 +141,7 @@ class RebalancingApp(Frame):
             self.p_var.set(100/len(self.df.index)*(i+1))
             self.progressbar.update()
 
-            if symbol in self.tickers['Symbol'].to_list():
+            if symbol in self.tickers['Symbol'].values:
                 # Loading live market data from yahoo finance
                 data_from_yahoo = get_quote_data(symbol)
                 # print(data_from_yahoo.keys())
@@ -149,6 +149,7 @@ class RebalancingApp(Frame):
                 temp = pd.Series(
                     {'Symbol': symbol,
                     'Description': self.tickers.loc[self.tickers['Symbol'] == symbol]['Security'].item(),
+                    'Sector': self.tickers.loc[self.tickers['Symbol'] == symbol]['GICS Sector'].item(),
                     'Cost Basis Per Share': self.df.loc[self.df['Symbol'] == symbol]['Cost Basis Per Share'].item(),
                     'Quantity': self.df.loc[self.df['Symbol'] == symbol]['Quantity'].item(),
                     'Market Cap': data_from_yahoo['marketCap'],
@@ -161,7 +162,7 @@ class RebalancingApp(Frame):
         # print("Loading is completed")
         
         # Reorder Columns
-        self.new_df = self.new_df[['Symbol', 'Description', 'Quantity', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
+        self.new_df = self.new_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
         
         # first_column = self.new_df.pop('Symbol')
         # self.new_df.insert(0, 'Symbol', first_column)
