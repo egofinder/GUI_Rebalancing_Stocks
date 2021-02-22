@@ -88,7 +88,21 @@ class RebalancingApp(Frame):
         
 # Rabalancing Functions    
     def equal_rebalancing(self):
-        print('Equal')
+        self.equal_df = pd.DataFrame()
+        # To test initial balance fixed to $100,000
+        invest_amount = 100_000
+        number_of_stocks = len(self.new_df.index)
+        invest_amount_per_stock = invest_amount/number_of_stocks
+        
+        for i, price in enumerate(self.new_df['Current Price']):
+            temp_series = pd.Series([invest_amount_per_stock/price], index=['Equal Rebalance'])
+            temp_series = self.new_df.iloc[i].append(temp_series)
+            self.equal_df = self.equal_df.append(temp_series, ignore_index=True)
+        self.equal_df = self.equal_df[['Symbol', 'Description', 'Quantity', 'Equal Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
+        self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False)
+        self.pt.autoResizeColumns()
+        self.pt.show()
+        self.pt.redraw()
         
     def market_cap_rebalancing(self):
         print('Market Cap')
@@ -99,7 +113,7 @@ class RebalancingApp(Frame):
          
     def load_market_data(self):
         self.tickers = tickers_sp500(True)
-        self.tickers.set_index('Symbol', inplace=True)
+        # self.tickers.set_index('Symbol', inplace=True)
         
     def load_user_data(self):
         _file = filedialog.askopenfilename(title="Choose csv file...",  \
@@ -108,8 +122,8 @@ class RebalancingApp(Frame):
             self.df = pd.read_csv(_file, index_col=False)
             self.df = self.df.drop(columns=['Account Name/Number'])
             # Keep only first row if there is duplications
-            self.df.drop_duplicates(subset=['Symbol'], inplace=True)
-            self.df.set_index('Symbol', inplace=True)
+            # self.df.drop_duplicates(subset=['Symbol'], inplace=True)
+            # self.df.set_index('Symbol', inplace=True)
             self.df = self.df.head(5)
             self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False)
             self.pt.autoResizeColumns()
@@ -122,22 +136,22 @@ class RebalancingApp(Frame):
              
     def update_data(self):
         self.load_market_data()
-        for i, symbol in enumerate(self.df.index):
+        for i, symbol in enumerate(self.df['Symbol']):
             # Variable for display status of Progressive Bar
             self.p_var.set(100/len(self.df.index)*(i+1))
             self.progressbar.update()
 
-            if symbol in self.tickers.index:
+            if symbol in self.tickers['Symbol'].to_list():
                 # Loading live market data from yahoo finance
                 data_from_yahoo = get_quote_data(symbol)
                 # print(data_from_yahoo.keys())
                 
                 temp = pd.Series(
                     {'Symbol': symbol,
-                    'Company': self.tickers.loc[symbol]['Security'],
-                    'Cost Basis Per Share': self.df.loc[symbol]['Cost Basis Per Share'],
-                    'Quantity': self.df.loc[symbol]['Quantity'],
-                    'Market Cap': data_from_yahoo['marketCap'], 
+                    'Description': self.tickers.loc[self.tickers['Symbol'] == symbol]['Security'].item(),
+                    'Cost Basis Per Share': self.df.loc[self.df['Symbol'] == symbol]['Cost Basis Per Share'].item(),
+                    'Quantity': self.df.loc[self.df['Symbol'] == symbol]['Quantity'].item(),
+                    'Market Cap': data_from_yahoo['marketCap'],
                     'Current Price': data_from_yahoo['regularMarketPrice'],
                     'P/E Ratio(PER)': data_from_yahoo['trailingPE'] if 'trailingPE' in data_from_yahoo.keys() else None,
                     'P/B Ratio(PBR)': data_from_yahoo['priceToBook'] if 'priceToBook' in data_from_yahoo.keys() else None}
@@ -145,8 +159,12 @@ class RebalancingApp(Frame):
                 self.new_df = self.new_df.append(temp, ignore_index=True)
         # Test line to verify loading status
         # print("Loading is completed")
-        first_column = self.new_df.pop('Symbol')
-        self.new_df.insert(0, 'Symbol', first_column)
+        
+        # Reorder Columns
+        self.new_df = self.new_df[['Symbol', 'Description', 'Quantity', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
+        
+        # first_column = self.new_df.pop('Symbol')
+        # self.new_df.insert(0, 'Symbol', first_column)
         # self.pt.destroy()
         # self.pt.clearTable()
         self.pt = Table(self.display, dataframe=self.new_df, showtoolbar=False, showstatusbar=False)
