@@ -4,6 +4,7 @@ from tkinter import messagebox # Library for messagebox
 import tkinter.ttk as ttk # Library for Prograssive Bar
 from tkinter import filedialog # Library for CSV File opening
 from pandastable import Table # Library to disply Pandas DataFrame to Tkinter
+from pandastable import config # Library to edit default configuration
 from yahoo_fin.stock_info import tickers_sp500
 from yahoo_fin.stock_info import get_quote_data
 
@@ -116,10 +117,21 @@ class RebalancingApp(Frame):
             temp_series = self.new_df.iloc[i].append(temp_series)
             self.equal_df = self.equal_df.append(temp_series, ignore_index=True)
         self.equal_df = self.equal_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Equal Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
-        self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False, editable=False)
-        self.pt.autoResizeColumns()
+        # self.pt.clearData()
+        self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False, editable=False, enable_menus=False)
+        options = config.load_options()
+        options = {'rowselectedcolor':None}
+        config.apply_options(options, self.pt)
         self.pt.show()
-        self.pt.redraw()
+        # Add color to indicate 'add' or 'sub' quantity to user. Green color for add. Red color for Sub.
+        add_mask = self.equal_df['Quantity'] < self.equal_df['Equal Rebalance']
+        self.pt.setColorByMask('Equal Rebalance', add_mask, '#7FFF00')
+        sub_mask = self.equal_df['Quantity'] > self.equal_df['Equal Rebalance']
+        self.pt.setColorByMask('Equal Rebalance', sub_mask, '#FF6EB4')
+        
+        
+        # self.pt.redraw()
+        self.pt.autoResizeColumns()
         
     def market_cap_rebalancing(self):
         print('Market Cap')
@@ -141,10 +153,13 @@ class RebalancingApp(Frame):
             # Keep only first row if there is duplications
             # self.df.drop_duplicates(subset=['Symbol'], inplace=True)
             self.df = self.df.head()           
-            self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False, editable=False)
+            self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False, editable=False, enable_menus=False)
+            options = config.load_options()
+            options = {'rowselectedcolor':None}
+            config.apply_options(options, self.pt)
             self.pt.show()
             self.pt.autoResizeColumns()
-            self.pt.redraw()
+            # self.pt.redraw()
             # Update Menu status
             self.menu_file.entryconfig("Update Market Values", state="normal")
         except:
@@ -179,16 +194,20 @@ class RebalancingApp(Frame):
         # first_column = self.new_df.pop('Symbol')
         # self.new_df.insert(0, 'Symbol', first_column)
         # self.pt.destroy()
-        # self.pt.clearTable()
+        # self.pt.clearData()
+        
         self.invested_temp_sum = 0
         for i in range(len(self.new_df)):
             self.invested_temp_sum += self.new_df['Quantity'][i] * self.new_df['Current Price'][i]
         self.invested_temp_sum = round(self.invested_temp_sum, 3) 
         self.invested_value.set(str(self.invested_temp_sum))
-        self.pt = Table(self.display, dataframe=self.new_df, showtoolbar=False, showstatusbar=False, editable=False)
+        self.pt = Table(self.display, dataframe=self.new_df, showtoolbar=False, showstatusbar=False, editable=False, enable_menus=False)
+        options = config.load_options()
+        options = {'rowselectedcolor':None}
+        config.apply_options(options, self.pt)
         self.pt.show()
         self.pt.autoResizeColumns()
-        self.pt.redraw()
+        # self.pt.redraw()
         
         # Update menu status
         self.menu.entryconfig("Strategies", state="normal") 
