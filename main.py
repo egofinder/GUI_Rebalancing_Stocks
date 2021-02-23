@@ -33,7 +33,7 @@ class RebalancingApp(Frame):
         self.menu_file.add_separator()
         self.menu_file.add_command(label="Load User Data", command=self.load_user_data)
         self.menu_file.add_separator()
-        self.menu_file.add_command(label="Save to Excel", state="disable") # 비활성화
+        self.menu_file.add_command(label="Save to Excel", state="disable")
         self.menu_file.add_separator()
         self.menu_file.add_command(label="Exit", command=self.quit)
         self.menu.add_cascade(label="File", menu=self.menu_file)
@@ -59,9 +59,7 @@ class RebalancingApp(Frame):
         self.add_invest_amount.grid(row=0, column=3, padx=1, pady=1)
         
         self.button_rebalancing = Button(self.top_frame, text='Rebalancing', font="* 15", command=self.rebalancing, state="disable")
-        self.button_rebalancing.grid(row=0, column=4, padx=0, pady=0)
-        
-        
+        self.button_rebalancing.grid(row=0, column=4, padx=0, pady=0)     
 
         # Add menu bar to main Window
         self.main.config(menu=self.menu)
@@ -75,7 +73,6 @@ class RebalancingApp(Frame):
         self.progressbar = ttk.Progressbar(self.main, maximum=100, variable=self.p_var)
         self.progressbar.pack(padx=1, pady=1, side='bottom', fill='x')
         
-
 # Functions
     # Window X Button overide
     # def on_closing():
@@ -87,7 +84,6 @@ class RebalancingApp(Frame):
             self.main.quit()
 
     def rebalancing(self):
-        
         if self.s_var.get() == 0:
             messagebox.showerror("Error","Please, select your strategy!")
         
@@ -105,7 +101,6 @@ class RebalancingApp(Frame):
         
 # Rabalancing Functions    
     def equal_rebalancing(self):
-        
         self.equal_df = pd.DataFrame()
         # I have to fix when user input text instead intgeter.
         if self.add_invest_value.get() == "0":
@@ -121,7 +116,7 @@ class RebalancingApp(Frame):
             temp_series = self.new_df.iloc[i].append(temp_series)
             self.equal_df = self.equal_df.append(temp_series, ignore_index=True)
         self.equal_df = self.equal_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Equal Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
-        self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False)
+        self.pt = Table(self.display, dataframe=self.equal_df, showtoolbar=False, showstatusbar=False, editable=False)
         self.pt.autoResizeColumns()
         self.pt.show()
         self.pt.redraw()
@@ -131,8 +126,7 @@ class RebalancingApp(Frame):
         
     def pe_ratio_rebalancing(self):
         print('P/E Ratio')  
-        
-         
+               
     def load_market_data(self):
         self.tickers = tickers_sp500(True)
         # self.tickers.set_index('Symbol', inplace=True)
@@ -146,9 +140,8 @@ class RebalancingApp(Frame):
             self.df = self.df.rename(columns={"Current Value":"Current Price"})
             # Keep only first row if there is duplications
             # self.df.drop_duplicates(subset=['Symbol'], inplace=True)
-            # self.df.set_index('Symbol', inplace=True)
             self.df = self.df.head()           
-            self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False)
+            self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False, editable=False)
             self.pt.show()
             self.pt.autoResizeColumns()
             self.pt.redraw()
@@ -168,12 +161,11 @@ class RebalancingApp(Frame):
                 # Loading live market data from yahoo finance
                 data_from_yahoo = get_quote_data(symbol)
                 # print(data_from_yahoo.keys())
-                
                 temp = pd.Series(
                     {'Symbol': symbol,
-                    'Description': self.tickers.loc[self.tickers['Symbol'] == symbol]['Security'].item(),
-                    'Sector': self.tickers.loc[self.tickers['Symbol'] == symbol]['GICS Sector'].item(),
-                    'Cost Basis Per Share': self.df.loc[self.df['Symbol'] == symbol]['Cost Basis Per Share'].item(),
+                    'Description': self.tickers.loc[self.tickers['Symbol'] == symbol]['Security'].item().strip(),
+                    'Sector': self.tickers.loc[self.tickers['Symbol'] == symbol]['GICS Sector'].item().strip(),
+                    'Cost Basis Per Share': self.df.loc[self.df['Symbol'] == symbol]['Cost Basis Per Share'].item().strip(),
                     'Quantity': self.df.loc[self.df['Symbol'] == symbol]['Quantity'].item(),
                     'Market Cap': data_from_yahoo['marketCap'],
                     'Current Price': data_from_yahoo['regularMarketPrice'],
@@ -181,9 +173,7 @@ class RebalancingApp(Frame):
                     'P/B Ratio(PBR)': data_from_yahoo['priceToBook'] if 'priceToBook' in data_from_yahoo.keys() else None}
                     )
                 self.new_df = self.new_df.append(temp, ignore_index=True)
-        # Test line to verify loading status
         # print("Loading is completed")
-        
         # Reorder Columns
         self.new_df = self.new_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
         # first_column = self.new_df.pop('Symbol')
@@ -195,7 +185,7 @@ class RebalancingApp(Frame):
             self.invested_temp_sum += self.new_df['Quantity'][i] * self.new_df['Current Price'][i]
         self.invested_temp_sum = round(self.invested_temp_sum, 3) 
         self.invested_value.set(str(self.invested_temp_sum))
-        self.pt = Table(self.display, dataframe=self.new_df, showtoolbar=False, showstatusbar=False)
+        self.pt = Table(self.display, dataframe=self.new_df, showtoolbar=False, showstatusbar=False, editable=False)
         self.pt.show()
         self.pt.autoResizeColumns()
         self.pt.redraw()
