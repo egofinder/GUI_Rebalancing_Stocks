@@ -34,8 +34,8 @@ class RebalancingApp(Frame):
         self.menu_file.add_separator()
         self.menu_file.add_command(label="Load User Data", command=self.load_user_data)
         self.menu_file.add_separator()
-        self.menu_file.add_command(label="Save to Excel", state="disable")
-        self.menu_file.add_separator()
+        # self.menu_file.add_command(label="Save to Excel", state="disable")
+        # self.menu_file.add_separator()
         self.menu_file.add_command(label="Exit", command=self.quit)
         self.menu.add_cascade(label="File", menu=self.menu_file)
 
@@ -43,8 +43,8 @@ class RebalancingApp(Frame):
         self.s_var = IntVar(value=0)
         self.menu_strategies = Menu(self.menu, tearoff=0, font="* 12")
         self.menu_strategies.add_radiobutton(label="Equal weight", variable=self.s_var, value=1)
-        self.menu_strategies.add_radiobutton(label="Market Cap", variable=self.s_var, value=2, state="disable")
-        self.menu_strategies.add_radiobutton(label="P/E Ratio", variable=self.s_var, value=3, state="disable")
+        self.menu_strategies.add_radiobutton(label="Market Cap", variable=self.s_var, value=2)
+        # self.menu_strategies.add_radiobutton(label="P/E Ratio", variable=self.s_var, value=3)
         # Default Strategies menu disable since there is no data to calculate
         self.menu.add_cascade(label="Strategies", menu=self.menu_strategies, state="disable") 
 
@@ -94,23 +94,25 @@ class RebalancingApp(Frame):
         elif self.s_var.get() == 2:
             self.market_cap_rebalancing()
             
-        elif self.s_var.get() == 3:
-            self.pe_ratio_rebalancing()
+        # elif self.s_var.get() == 3:
+        #     self.pe_ratio_rebalancing()
         
         else:
             messagebox.showerror("Critical","Something wrong!!!!!!!!")
         
 # Rabalancing Functions    
-    def equal_rebalancing(self):
-        self.equal_df = pd.DataFrame()
+    def invest_amount_calculation(self):
         # I have to fix when user input text instead intgeter.
         if self.add_invest_value.get() == "0":
-            invest_amount = self.invested_temp_sum
+            self.invest_amount = self.invested_temp_sum
         else:
-            invest_amount = int(self.invested_temp_sum) + int(self.add_invest_amount.get())
-
+            self.invest_amount = int(self.invested_temp_sum) + int(self.add_invest_amount.get())
+        
+    def equal_rebalancing(self):
+        self.invest_amount_calculation()
+        self.equal_df = pd.DataFrame()
         number_of_stocks = len(self.new_df.index)
-        invest_amount_per_stock = invest_amount/number_of_stocks
+        invest_amount_per_stock = self.invest_amount/number_of_stocks
         
         for i, price in enumerate(self.new_df['Current Price']):
             temp_series = pd.Series([invest_amount_per_stock/price], index=['Equal Rebalance'])
@@ -129,15 +131,35 @@ class RebalancingApp(Frame):
         sub_mask = self.equal_df['Quantity'] > self.equal_df['Equal Rebalance']
         self.pt.setColorByMask('Equal Rebalance', sub_mask, '#FF6EB4')
         
-        
         # self.pt.redraw()
         self.pt.autoResizeColumns()
         
     def market_cap_rebalancing(self):
-        print('Market Cap')
+        self.invest_amount_calculation()
+        self.cap_df = pd.DataFrame()
+        total_market_cap = self.new_df['Market Cap'].sum()
+        for i, cap in enumerate(self.new_df['Market Cap']):
+            temp_series = pd.Series([self.invest_amount*cap/total_market_cap/self.new_df['Current Price'][i]], index=['Cap Rebalance'])
+            temp_series = self.new_df.iloc[i].append(temp_series)
+            self.cap_df = self.cap_df.append(temp_series, ignore_index=True)
+        self.cap_df = self.cap_df[['Symbol', 'Description', 'Sector', 'Quantity', 'Cap Rebalance', 'Cost Basis Per Share', 'Market Cap', 'Current Price', 'P/E Ratio(PER)', 'P/B Ratio(PBR)']]
         
-    def pe_ratio_rebalancing(self):
-        print('P/E Ratio')  
+        self.pt = Table(self.display, dataframe=self.cap_df, showtoolbar=False, showstatusbar=False, editable=False, enable_menus=False)
+        options = config.load_options()
+        options = {'rowselectedcolor':None}
+        config.apply_options(options, self.pt)
+        self.pt.show()
+        # Add color to indicate 'add' or 'sub' quantity to user. Green color for add. Red color for Sub.
+        add_mask = self.cap_df['Quantity'] < self.cap_df['Cap Rebalance']
+        self.pt.setColorByMask('Cap Rebalance', add_mask, '#7FFF00')
+        sub_mask = self.cap_df['Quantity'] > self.cap_df['Cap Rebalance']
+        self.pt.setColorByMask('Cap Rebalance', sub_mask, '#FF6EB4')
+        # print(total_market_cap)
+        self.pt.autoResizeColumns()
+        
+        
+    # def pe_ratio_rebalancing(self):
+    #     print('P/E Ratio')  
                
     def load_market_data(self):
         self.tickers = tickers_sp500(True)
@@ -152,7 +174,7 @@ class RebalancingApp(Frame):
             self.df = self.df.rename(columns={"Current Value":"Current Price"})
             # Keep only first row if there is duplications
             # self.df.drop_duplicates(subset=['Symbol'], inplace=True)
-            self.df = self.df.head()           
+            # self.df = self.df.head()           
             self.pt = Table(self.display, dataframe=self.df, showtoolbar=False, showstatusbar=False, editable=False, enable_menus=False)
             options = config.load_options()
             options = {'rowselectedcolor':None}
@@ -211,7 +233,7 @@ class RebalancingApp(Frame):
         
         # Update menu status
         self.menu.entryconfig("Strategies", state="normal") 
-        self.menu_file.entryconfig("Save to Excel", state="normal")
+        # self.menu_file.entryconfig("Save to Excel", state="normal")
         self.button_rebalancing.config(state="normal")
 
 app = RebalancingApp()
