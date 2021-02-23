@@ -42,8 +42,8 @@ class RebalancingApp(Frame):
         self.s_var = IntVar(value=0)
         self.menu_strategies = Menu(self.menu, tearoff=0, font="* 12")
         self.menu_strategies.add_radiobutton(label="Equal weight", variable=self.s_var, value=1)
-        self.menu_strategies.add_radiobutton(label="Market Cap", variable=self.s_var, value=2)
-        self.menu_strategies.add_radiobutton(label="P/E Ratio", variable=self.s_var, value=3)
+        self.menu_strategies.add_radiobutton(label="Market Cap", variable=self.s_var, value=2, state="disable")
+        self.menu_strategies.add_radiobutton(label="P/E Ratio", variable=self.s_var, value=3, state="disable")
         # Default Strategies menu disable since there is no data to calculate
         self.menu.add_cascade(label="Strategies", menu=self.menu_strategies, state="disable") 
 
